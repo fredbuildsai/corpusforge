@@ -1,0 +1,7 @@
+# corpusforge reads only the `chunking` section; a host project adds its own generation/balance settings
+# to the same file (unknown top-level keys are ignored here).
+chunking:
+  target_tokens: 1500   # chunks are packed up to about this many tokens (bigger chunks = fewer LLM calls later)
+  max_tokens: 2000      # hard cap; a paragraph longer than this is split by sentences
+  overlap_tokens: 150   # trailing sentences of the previous chunk repeated at the start of the next (<= ~10%)
+  max_garble_ratio: 0.10  # share of tokens in runs of >= 4 single-character tokens (axis-label soup is ~0.7+)

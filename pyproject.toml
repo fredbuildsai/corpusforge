@@ -1,0 +1,59 @@
+[project]
+name = "corpusforge"
+version = "0.1.0"
+description = "Domain-agnostic pipeline that turns open-access scientific literature into licensed, chunked, LLM-annotated training corpora"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "llmrouter-free @ git+https://github.com/fredbuildsai/llmrouter-free.git@v0.1.0",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "python-dotenv>=1.0",
+    "typer>=0.12",
+    "rich>=13.7",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+    "tenacity>=8.3",
+    "tokenizers>=0.19",
+]
+
+[project.optional-dependencies]
+parse = ["docling>=2.0", "lxml>=5.2"]
+dedupe = ["datasketch>=1.6"]
+dev = ["pytest>=8.2", "respx>=0.21", "ruff>=0.5"]
+
+[project.scripts]
+corpusforge = "corpusforge.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/corpusforge"]
+
+[tool.uv.sources]
+# Local development: use the sibling checkout instead of the GitHub tag. Ignored by pip / end users.
+llmrouter-free = { path = "../llmrouter-free", editable = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+# E501: long explanatory comments/docstrings are intentional. B008: typer.Option()/Argument() in defaults is
+# Typer's documented idiom. B023: closures over the loop variable here are called within the iteration.
+ignore = ["E501", "B008", "B023"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E731"]

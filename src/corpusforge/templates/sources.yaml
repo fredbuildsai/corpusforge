@@ -1,0 +1,52 @@
+# corpusforge discovery + screening config. EDIT THIS FILE FOR YOUR DOMAIN - the example below is a
+# placeholder topic (perovskite solar cells) showing every key.
+#
+# scope.must    - groups of keywords; a paper must match at least one keyword in EVERY group (OR within a group,
+#                 AND across groups). This is the hard on-topic gate applied during screening.
+# scope.boost   - named keyword groups; each group a paper hits raises its relevance score. Names are free-form
+#                 and become `topic_tags` on the document.
+# scope.comparison_only - terms marking papers about neighbouring fields: kept only as comparison context.
+scope:
+  must:
+    - ["perovskite solar cell", "perovskite photovoltaic", "halide perovskite"]
+  boost:
+    materials: ["MAPbI3", "FAPbI3", "CsPbBr3", "tin perovskite", "2D perovskite"]
+    devices: ["tandem", "HTL", "ETL", "SnO2", "spiro-OMeTAD"]
+    stability: ["degradation", "ion migration", "moisture", "encapsulation", "T80"]
+    characterization: ["XRD", "PL", "TRPL", "SEM", "XPS", "UPS"]
+  comparison_only: ["organic solar cell", "silicon solar cell"]
+
+# License families (version-less ids, see corpusforge.screen.license). Only these ids may be redistributed:
+# a public dataset release should not include NC/ND material. `license_flag` families are kept but marked
+# for review (e.g. share-alike obligations).
+license_allow: ["CC0", "CC-BY", "public-domain"]
+license_flag: ["CC-BY-SA"]
+
+sources:
+  chemrxiv:
+    enabled: true
+    base_url: "https://chemrxiv.org/engage/chemrxiv/public-api/v1"
+    terms: ["perovskite solar cell", "halide perovskite stability"]
+  arxiv:
+    enabled: true
+    # OAI-PMH sets (verify with ListSets); records are then filtered locally by category and scope.must terms
+    oai_sets: ["physics:cond-mat:mtrl-sci", "physics:physics:app-ph"]
+    categories: ["cond-mat.mtrl-sci", "physics.app-ph"]
+  openalex:
+    enabled: true
+    filter: "is_oa:true,type:article|preprint|dissertation"
+    # The discovery limit is split evenly across these terms so each topic contributes.
+    terms:
+      - "perovskite solar cell"
+      - "perovskite solar cell stability"
+      - "tin halide perovskite"
+      - "perovskite silicon tandem"
+  europepmc:
+    enabled: true
+    terms: ["perovskite solar cell"]
+  core:
+    enabled: true
+    terms: ["perovskite solar cell"]
+  osti:
+    enabled: true
+    terms: ["perovskite solar cell"]
