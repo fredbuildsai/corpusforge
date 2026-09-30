@@ -4,7 +4,7 @@ Splitting must happen at the *document* level, not per-example: several QA/negat
 from the same paper, and letting some of a paper's rows land in eval while others train on the same source
 text would leak information across the split. Each document's `doc_id` hashes to a stable train/eval
 assignment, then every derived row (QA, Ideation, Negative, DPOPair, ClaimPair) inherits its source
-document's split at export time (see `export.unsloth_jsonl`).
+document's split at export time (see `export.corpus`).
 """
 
 import hashlib
