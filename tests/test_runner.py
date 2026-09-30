@@ -344,3 +344,17 @@ def test_chunk_ids_filter_file(tmp_path):
     f.write_text("a#c0\n\n  b#c1  \n")
     assert load_chunk_ids_filter(f) == {"a#c0", "b#c1"}
     assert load_chunk_ids_filter(None) is None
+
+
+def test_call_and_persist_is_the_bookkeeping_free_core(engine):
+    """One router call + persistence, no gen_tasks rows: what a host can use to test its persist function."""
+    from corpusforge.runner import call_and_persist
+
+    seed(engine, chunks_per_doc=2)
+    router, calls = make_router(engine, answer_all)
+    with get_session(engine) as s:
+        chunks = [s.get(Chunk, "doc0#c0"), s.get(Chunk, "doc0#c1")]
+        payloads = call_and_persist(s, router, SPEC, chunks, use_cache=True, console=None)
+    assert payloads == {"doc0#c0": {"notes": 1}, "doc0#c1": {"notes": 1}} and len(calls) == 1
+    with get_session(engine) as s:
+        assert list(s.scalars(select(GenTask))) == []

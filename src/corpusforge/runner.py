@@ -102,7 +102,7 @@ def run_batch(
     try:
         with get_session(engine) as s:
             chunks = [s.get(Chunk, chunk_id) for chunk_id in pending]
-            payloads = _call_and_persist(s, router, spec, chunks, use_cache=not force, console=console)
+            payloads = call_and_persist(s, router, spec, chunks, use_cache=not force, console=console)
     except AllDeploymentsExhausted as exc:
         with get_session(engine) as s:
             for chunk_id in pending:
@@ -130,12 +130,14 @@ def _task(session: Session, key: str) -> GenTask:
     return session.scalars(select(GenTask).where(GenTask.key == key)).one()
 
 
-def _call_and_persist(
+def call_and_persist(
     session: Session, router: LLMRouter, spec: ChunkTaskSpec, chunks: list[Chunk], *, use_cache: bool,
     console: Console | None,
 ) -> dict[str, dict[str, Any]]:
-    """One router call for all `chunks`, persisting each returned chunk result via the spec. A `chunk_index`
-    missing from the response is simply absent from the returned `{chunk_id: payload}` map."""
+    """One router call for all `chunks`, persisting each returned chunk result via the spec - no task
+    bookkeeping (that is `run_batch`'s job). A `chunk_index` missing from the response is simply absent from the
+    returned `{chunk_id: payload}` map, so the caller can retry it. `session` must not already hold pending
+    writes (see the module docstring)."""
     result = router.complete(
         spec.route, spec.build_messages([c.text for c in chunks]),
         validate=json_validator(spec.response_schema),
