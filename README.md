@@ -31,7 +31,7 @@ router for free-tier providers, so a large annotation run survives rate limits a
 ## Contents
 - [What you get](#what-you-get) · [Install](#install) · [Quickstart](#quickstart) · [The pipeline stage by stage](#the-pipeline-stage-by-stage)
 - [Configuration reference](#configuration-reference) · [CLI reference](#cli-reference) · [Python API](#python-api)
-- [Writing an annotation stage](#writing-an-annotation-stage-the-batched-chunk-runner) · [Exporting and licensing](#exporting-a-dataset-and-proving-its-licenses)
+- [Writing an annotation stage](#writing-an-annotation-stage-the-batched-chunk-runner) · [Structured output](#structured-output-how-the-llms-json-is-requested-and-checked) · [Exporting and licensing](#exporting-a-dataset-and-proving-its-licenses)
 - [Embedding in your own project](#embedding-in-your-own-project) · [Data model](#data-model) · [Limitations](#limitations)
 - [Architecture docs](docs/architecture/README.md) · [Changelog](CHANGELOG.md)
 
@@ -339,6 +339,42 @@ What the runner guarantees:
 
 `run_backlog` returns a `BacklogResult(outcomes, api_calls, stopped, pending)`; `stopped=True` means the
 consecutive-failure limit was hit.
+
+## Structured output: how the LLM's JSON is requested and checked
+
+corpusforge does not talk to providers itself, so it does not own JSON handling - [`llmrouter-free`](https://github.com/fredbuildsai/llmrouter-free#structured-output-json-that-is-actually-valid)
+does, and the runner wires it up for you. For every batch, `run_batch` calls the router with three things derived from
+your `ChunkTaskSpec.response_schema` (a Pydantic model):
+
+| Mechanism | Where it comes from | What it does |
+|---|---|---|
+| `response_format=json_schema_response_format(schema)` | llmrouter-free | Asks the provider for schema-constrained decoding (`json_schema`, strict) where it is supported - the model is steered into your exact shape. |
+| `validate=json_validator(schema)` | llmrouter-free | Parses the reply (tolerating ```` ```json ```` fences), validates it against the schema, and **rejects a non-empty object that shares no field with it** (so a truncated `{"": "results"}` cannot be cached as a valid empty answer). A rejected reply counts as `invalid_output`: the router retries/fails over to the next deployment and never caches it. |
+| `temperature=spec.temperature` (default `0`) | `ChunkTaskSpec` | Schema-constrained extraction was measured to be most consistent, fully-populated JSON at temperature 0 (verified live on Nemotron and a local Gemma). Override per stage if you need sampling. |
+
+What corpusforge adds on top: the batch-shaped contract (`results[*].chunk_index`), so a reply that omits an excerpt is
+detected and only the missing chunks are retried once (see the runner guarantees above).
+
+**Model-specific quirks live in `configs/llm_routes.yaml`, not in code.** For example, reasoning models such as Nemotron can
+spend almost their whole output budget on hidden thinking and truncate the JSON (seen live: 14,488 of 15,000 tokens);
+the bundled routes file sets `extra_body: {reasoning: {enabled: false}}` on those deployments, `think: false` on local
+Ollama models, and `min_max_tokens` where a floor is needed. Providers that reject strict schemas can be handled with
+`json_schema_response_format(schema, strict=False)`. Details and the full key list: the llmrouter-free
+[configuration reference](https://github.com/fredbuildsai/llmrouter-free#configuration-reference).
+
+Your own code gets the same guarantees outside the runner:
+
+```python
+from llmrouter_free import json_schema_response_format, json_validator
+
+result = router.complete(
+    "extract", messages,
+    validate=json_validator(BatchNotes),
+    response_format=json_schema_response_format(BatchNotes),
+    temperature=0,
+)
+notes: BatchNotes = result.parsed
+```
 
 ## Exporting a dataset and proving its licenses
 

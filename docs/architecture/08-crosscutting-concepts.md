@@ -28,6 +28,15 @@ One `PoliteClient` for all sources: GET-only, per-host minimum interval, exponen
 identifying User-Agent with optional `mailto:`, and detection of bot-management challenges (`cf-mitigated: challenge`,
 known body signatures) which raises rather than retries.
 
+## Structured LLM output
+Owned by `llmrouter-free`, applied by `runner.call_and_persist`: the stage's batch-shaped Pydantic schema becomes a strict
+`json_schema` `response_format` (schema-constrained decoding where the provider supports it) and a `json_validator`
+(fence-tolerant parse + schema check + a guard against non-empty objects sharing no field with the schema). A reply that
+fails validation is an `invalid_output` attempt - retried or failed over, never cached. Temperature defaults to 0 for
+extraction. Model quirks (Nemotron's hidden reasoning eating the output budget, Ollama thinking mode) are configuration in
+`llm_routes.yaml` (`extra_body`, `min_max_tokens`), not code. Missing excerpts in an otherwise valid reply are detected via
+`chunk_index` and retried once.
+
 ## Logging
 Standard `logging` everywhere. `configure_logging(roots=...)` attaches one `DBLogHandler` (all levels, into `logs.db`) and
 a console handler (WARNING+) to each logger tree; it is idempotent. Structured context travels as

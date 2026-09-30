@@ -153,3 +153,20 @@ def test_the_chunk_task_spec_fields_named_in_the_readme_exist():
     fields = {f.name for f in dataclasses.fields(corpusforge.ChunkTaskSpec)}
     assert {"task_type", "build_messages", "response_schema", "persist_result", "output_tokens_per_chunk",
             "route"} <= fields
+
+
+def test_readme_documents_structured_output_and_the_names_it_mentions_exist():
+    assert "## Structured output" in README
+    import llmrouter_free
+
+    from corpusforge import runner
+
+    for name in ("json_schema_response_format", "json_validator"):
+        assert name in README and hasattr(llmrouter_free, name) and name in open(runner.__file__).read()
+    assert ChunkTaskSpecTemperatureDefault() == 0
+
+
+def ChunkTaskSpecTemperatureDefault():
+    import dataclasses
+
+    return next(f.default for f in dataclasses.fields(corpusforge.ChunkTaskSpec) if f.name == "temperature")
