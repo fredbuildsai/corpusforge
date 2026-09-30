@@ -38,10 +38,6 @@ allow-direct-references = true
 [tool.hatch.build.targets.wheel]
 packages = ["src/corpusforge"]
 
-[tool.uv.sources]
-# Local development: use the sibling checkout instead of the GitHub tag. Ignored by pip / end users.
-llmrouter-free = { path = "../llmrouter-free", editable = true }
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

@@ -442,8 +442,8 @@ All column types are portable, so the same models run on PostgreSQL.
 
 ```bash
 git clone https://github.com/fredbuildsai/corpusforge && cd corpusforge
-# expects a sibling checkout of llmrouter-free for editable development:
-#   git clone https://github.com/fredbuildsai/llmrouter-free ../llmrouter-free
+# for editable development across both repositories, install the sibling checkout too:
+#   git clone https://github.com/fredbuildsai/llmrouter-free ../llmrouter-free && uv pip install -e ../llmrouter-free
 uv venv && uv pip install -e ".[dev,parse,dedupe]"
 uv run pytest -q          # ~220 tests, no network, no API keys
 uv run ruff check src tests

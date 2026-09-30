@@ -15,8 +15,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
-      # `uv pip install` ignores [tool.uv.sources] (the local editable override for ../llmrouter-free), so CI
-      # installs llmrouter-free from its GitHub tag exactly as an end user would.
+      # Installs llmrouter-free from its GitHub tag exactly as an end user would.
       - name: Install
         run: uv venv && uv pip install -e ".[dev,parse,dedupe]"
       - name: Lint
